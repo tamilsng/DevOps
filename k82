@@ -1,0 +1,78 @@
+K8
+
+https://www.oreilly.com/ideas/how-to-manage-docker-containers-in-kubernetes-with-java
+
+https://kubernetes.io/docs/setup/learning-environment/minikube/
+
+https://kubernetes.io/docs/tasks/tools/install-kubectl/
+
+https://github.com/tamilsng/oreilly-docker-java-shopping
+
+
+docker build -t tamil/djshopfront:1.0 .
+
+docker push tamil/djshopfront:1.0
+
+docker build -t tamil/djproductcatalogue:1.0 .
+
+docker push tamil/djproductcatalogue:1.0
+
+docker build -t tamil/djstockmanager:1.0 .
+
+docker push tamil/djstockmanager:1.0
+
+
+
+Kubernates folder
+
+
+minikube start --cpus 2 --memory 4096
+
+kubectl apply -f shopfront-service.yaml
+
+kubectl apply -f productcatalogue-service.yaml
+
+kubectl apply -f stockmanager-service.yaml
+
+kubectl get svc
+
+kubectl get pods
+
+curl $(minikube service shopfront --url)/health
+
+minikube service shopfront
+
+Localhost:8010
+
+
+
+
+K8 2
+
+
+docker build -t tamil/aub:1.0 .
+
+docker push tamil/aub:1.0
+
+
+
+minikube start --cpus 2 --memory 4096
+
+kubectl apply -f shopfront-service.yaml
+
+kubectl apply -f productcatalogue-service.yaml
+
+kubectl apply -f stockmanager-service.yaml
+
+kubectl get svc
+
+kubectl get pods
+
+curl $(minikube service shopfront --url)/health
+
+minikube service shopfront
+
+
+http://192.168.64.9:31068/account
+
+git clone 
