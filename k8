@@ -1,0 +1,94 @@
+CICD
+https://medium.com/@maxy_ermayank/pipeline-as-a-code-using-jenkins-2-aa872c6ecdce
+
+https://dzone.com/articles/learn-how-to-setup-a-cicd-pipeline-from-scratch
+
+K8 commands
+
+https://www.linkedin.com/learning/learning-kubernetes/running-a-first-hello-world-application
+
+to start cluster
+> minikube start 
+
+To check the nodes running
+> kubectl get nodes 
+
+ kubectl run hw --image=karthequian/helloworld --port=80
+
+ kubectl get deployments (Shows the current state of deployment)
+
+ kubectl get pods  
+
+ kubectl get svc
+
+ kubectl get rs ( to check replica-sets)
+
+ kubectl expose deployment hw --type=NodePort ( to expose the above image as service) 
+
+ kubectl get services (list the services)
+
+ minikube service hw ( to pull this up in the browser )
+
+ minikube dashboard ( to show the dashboard)
+
+————————————————————
+
+minikube start 
+kubectl get nodes
+kubectl get pods
+kubectl run webserver --image=nginx:alpine
+kubectl get deployments
+kubectl get pods
+kubectl delete pod webserver-7c4b94dbb4-8mmms
+kubectl get pods
+kubectl expose deployment webserver --type=LoadBalancer --port=80
+kubectl get services
+kubectl get pods
+minikube service webserver --url ( to check the url)
+minikube dashboard
+kubectl delete service webserver
+—————————————————————
+
+
+Deployments pods services	
+
+Service - it is an endpoint that expose the port to the outside world and map that port to the container port
+
+
+
+-----------
+
+K8 2
+
+
+docker build -t tamil/aub:1.0 .
+
+docker push tamil/aub:1.0
+
+
+
+minikube start --cpus 2 --memory 4096
+
+kubectl apply -f shopfront-service.yaml
+
+kubectl apply -f productcatalogue-service.yaml
+
+kubectl apply -f stockmanager-service.yaml
+
+kubectl get svc
+
+kubectl get pods
+
+curl $(minikube service shopfront --url)/health
+
+minikube service shopfront
+
+
+http://192.168.64.9:31068/account
+
+git clone 
+
+-------------------
+
+
+Service - it is an endpoint that expose the port to the outside world and map that port to the container port
