@@ -1,0 +1,41 @@
+}LKh8D;5-nm}iNI
+
+Docker commands
+
+docker pull openjdk:latest
+
+docker run -it -p 8090:8080 --name aub1 openjdk:latest bash;
+
+docker cp ./aub.jar aub1:/home/aub.jar
+
+docker exec -it aub1 bash
+
+Inside docker 
+
+java -jar /home/aub.jar
+
+ctrl p + q to came outside from the container without exiting.
+
+http://localhost:8090/account
+
+http://52.66.181.49:8090/aub/
+
+http://52.66.181.49:8090/account
+
+docker run -d --name aub -p 8090:8080 java -jar /home/aub.jar
+
+docker run -d -p 8090:8080 --name aub1 openjdk:latest bash
+
+
+docker run -it --name eureka -p 8761:8761 tamil/aub-eureka:1.0
+
+docker run -it -p 8081:8081 --name aubservice1 tamil/aub-services:1.0
+
+docker run -it -p 8093:8093 --name aubadmin tamil/spring-boot-admin:1.0
+
+docker run -it -p 9411:9411 --name pipkin tamil/aub-zipkin:1.0
+
+docker exec -it aub bash
+
+docker run -it -p 8093:8093 --name aubadmin openjdk:latest bash 
+
