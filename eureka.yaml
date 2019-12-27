@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eureka
+spec:
+  replicas: 1
+  selector:
+   matchLabels:
+      app: eureka
+  template:
+    metadata:
+      labels:
+        app: eureka
+    spec:
+      containers:
+      - name: eureka
+        image: tamil/aub-eureka:1.0
+        ports:
+        - containerPort: 8761
+          name: eureka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eureka
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8761
+  selector:
+    app: eureka
+

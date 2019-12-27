@@ -1,0 +1,1079 @@
+iPre Requirement:
+
+Step i: Azure Account
+Step ii: Ubuntu Machine
+Distributor ID: Ubuntu
+Description: Ubuntu 18.04 LTS
+Release: 18.04
+Codename: bionic
+
+Software requirement & Installations:
+
+Step 1.1: Docker installation @ Ubuntu
+
+Referece Link:
+https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-18-04
+
+Below steps taken from mentioned reference link.
+sudo apt update
+sudo apt install apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+sudo apt update
+apt-cache policy docker-ce
+sudo apt install docker-ce
+sudo systemctl status docker
+Executing the Docker Command Without Sudo (Optional)
+sudo usermod -aG docker ${USER}
+id -nG
+USER sudo docker
+sudo usermod -aG docker username
+su - ${USER}
+sudo usermod -aG docker username
+
+Step 1.2: Docker Registry @ Azure
+
+Reference Link:
+https://docs.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal
+
+
+
+Myquit Docker Registry:
+Registry name  -  myquitdocker
+Login server - myquitdocker.azurecr.io
+Username  -  myquitdocker
+password:   ywUz2D3UE8G5j/DQMqbHAO/cEgHaxuEc
+Password2:   WdDVthnr6WMz9PMILV7en7R+SwNRMSeq
+
+
+
+
+Step 1.3: Docker Image creation 
+
+Run Docker-file from source-code and create Docker Image, Then login to Azure docker registry and do the tag, push and pull activities. These tag names we will update in deployment yaml file. Below are sample commands to do this activities.
+
+docker login --username myquitdocker --password ywUz2D3UE8G5j/DQMqbHAO/cEgHaxuEc myquitdocker.azurecr.io
+docker tag myquit_content_service:latest myquitdocker.azurecr.io/myquit_content_service:v1
+docker push myquitdocker.azurecr.io/myquit_content_service:v1
+docker pull myquitdocker.azurecr.io/myquit_content_service:v1
+
+
+Step2.1: Azure Command-line Installation
+
+Install Azure CLI: Rference Link
+https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
+https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-apt?view=azure-cli-latest
+
+Modify your sources list:
+AZ_REPO=$(lsb_release -cs)
+echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | \
+    sudo tee /etc/apt/sources.list.d/azure-cli.list
+	
+Get the Microsoft signing key:
+curl -L https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+
+Install the CLI:
+sudo apt-get update
+sudo apt-get install apt-transport-https azure-cli
+
+
+photon@sysadmin:~$ az login
+To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code GCRF3YL5F to authenticate.
+
+
+
+https://microsoft.com/devicelogin open in browser and provide CODE.
+Prompt for Azure USerName & Password, Fill these details and close browser window as per instructions. In few seconds you can observe below response.
+
+
+photon@gsk-mobilefactory-vm:~$ az login
+To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code G2JE78ZD2 to authenticate.
+[
+  {
+    "cloudName": "AzureCloud",
+    "id": "7678fcbd-9bbb-4542-a9c3-bd99fe813d99",
+    "isDefault": true,
+    "name": "Pay-As-You-Go7678fcbd-9bbb-4542-a9c3-bd99fe813d99",
+    "state": "Enabled",
+    "tenantId": "a65bc4a0-2bdb-4de0-a91d-b1f6e43e756b",
+    "user": {
+      "name": "vinoth.arunagiri@itphotoninfotech.onmicrosoft.com",
+      "type": "user"
+    }
+  }
+]
+
+In command prompt: 
+
+az login -u vinoth.arunagiri@itphotoninfotech.onmicrosoft.com -p Photon@1234567
+
+
+Step2.2: Azure AKS
+
+Deploy an Azure Kubernetes Service (AKS) cluster
+Reference Link:
+ HYPERLINK "https://docs.microsoft.com/en-us/azure/aks/tutorial-kubernetes-deploy-cluster" https://docs.microsoft.com/en-us/azure/aks/tutorial-kubernetes-deploy-cluster
+
+ HYPERLINK "https://stackify.com/azure-container-service-kubernetes/" https://stackify.com/azure-container-service-kubernetes/
+
+
+Create a service principal:
+To allow an AKS cluster to interact with other Azure resources, an Azure Active Directory service principal is used. This service principal can be automatically created by the Azure CLI or portal, or you can pre-create one and assign additional permissions.
+
+
+photon@gsk-mobilefactory-vm:~$ az ad sp create-for-rbac --skip-assignment
+
+{
+  "appId": "5b2df6ce-3983-4943-8c2f-c4ed712cd410",
+  "displayName": "azure-cli-2018-10-23-15-00-19",
+  "name": "http://azure-cli-2018-10-23-15-00-19",
+  "password": "1b2aa771-c9cf-4c42-bd98-044d5bb6e01c",
+  "tenant": "a65bc4a0-2bdb-4de0-a91d-b1f6e43e756b"
+}
+
+We will get above details, which we used across the AKS setup, wherever its requires.
+
+Configure ACR authentication:
+
+To access images stored in ACR, you must grant the AKS service principal the correct rights to pull images from ACR.
+az acr show --resource-group myResourceGroup --name <acrName> --query "id" --output tsv
+
+photon@gsk-mobilefactory-vm:~$ az acr show --resource-group MyQuit --name myquitdocker --query "id" --output tsv
+/subscriptions/7678fcbd-9bbb-4542-a9c3-bd99fe813d99/resourceGroups/MyQuit/providers/Microsoft.ContainerRegistry/registries/myquitdocker
+
+
+To grant the correct access for the AKS cluster to use images stored in ACR, create a role assignment using the az role assignment create command.
+az role assignment create --assignee <appId> --scope <acrId> --role Reader
+
+photon@gsk-mobilefactory-vm:~$ az role assignment create --assignee 5b2df6ce-3983-4943-8c2f-c4ed712cd410 --scope /subscriptions/7678fcbd-9bbb-4542-a9c3-bd99fe813d99/resourceGroups/MyQuit/providers/Microsoft.ContainerRegistry/registries/myquitdocker --role Reader
+
+{
+  "canDelegate": null,
+  "id": "/subscriptions/7678fcbd-9bbb-4542-a9c3-bd99fe813d99/resourceGroups/MyQuit/providers/Microsoft.ContainerRegistry/registries/myquitdocker/providers/Microsoft.Authorization/roleAssignments/2016933a-3cff-4135-ad11-ba559a40edf3",
+  "name": "2016933a-3cff-4135-ad11-ba559a40edf3",
+  "principalId": "b441be98-7831-4fa2-b81f-9739fa58f51e",
+  "resourceGroup": "MyQuit",
+  "roleDefinitionId": "/subscriptions/7678fcbd-9bbb-4542-a9c3-bd99fe813d99/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7",
+  "scope": "/subscriptions/7678fcbd-9bbb-4542-a9c3-bd99fe813d99/resourceGroups/MyQuit/providers/Microsoft.ContainerRegistry/registries/myquitdocker",
+  "type": "Microsoft.Authorization/roleAssignments"
+}
+
+Create Secret for Docker-Registry: 
+(Note: Alternate method for Configure ACR authentication)
+
+kubectl create secret docker-registry docker-reg-credential \
+  --docker-server=myquitdev.azurecr.io --docker-username=myquitdev \
+  --docker-password=DX4vDoEyLXQIfMqD/rG092liiDTGSrcJ  
+  
+
+kubectl create secret docker-registry docker-reg-credential --docker-server=myquitdev.azurecr.io --docker-username=myquitdev --docker-password=DX4vDoEyLXQIfMqD/rG092liiDTGSrcJ
+  secret "docker-reg-credential" created
+
+Add below spec in Deployment.yaml file.
+      spec:
+      imagePullSecrets:
+      - name: docker-reg-credential
+
+
+Create AKS Cluster:
+
+photon@gsk-mobilefactory-vm:~$ az aks create --resource-group MyQuit --name MyQuitAKSCluster --node-count 1 --service-principal 5b2df6ce-3983-4943-8c2f-c4ed712cd410 --client-secret 1b2aa771-c9cf-4c42-bd98-044d5bb6e01c --enable-addons monitoring --generate-ssh-keys
+
+Runing ...  !!!  It will take quite some time to create Cluster, Please hold up to completion   !!!
+
+Install the Kubernetes CLI:
+
+To connect to the Kubernetes cluster from your local computer, you use kubectl, the Kubernetes command-line client.
+
+az aks install-cli
+
+kubectl version
+photon@gsk-mobilefactory-vm:~$ kubectl version
+Client Version: version.Info{Major:"1", Minor:"12", GitVersion:"v1.12.1", GitCommit:"4ed3216f3ec431b140b1d899130a69fc671678f4", GitTreeState:"clean", BuildDate:"2018-10-05T16:46:06Z", GoVersion:"go1.10.4", Compiler:"gc", Platform:"linux/amd64"}
+Server Version: version.Info{Major:"1", Minor:"9", GitVersion:"v1.9.11", GitCommit:"1bfeeb6f212135a22dc787b73e1980e5bccef13d", GitTreeState:"clean", BuildDate:"2018-09-28T21:35:22Z", GoVersion:"go1.9.3", Compiler:"gc", Platform:"linux/amd64"}
+
+Connect to cluster using kubectl
+az aks get-credentials --resource-group myResourceGroup --name myAKSCluster
+
+photon@gsk-mobilefactory-vm:~$ az aks get-credentials --resource-group MyQuit --name MyQuitAKSCluster
+Merged "MyQuitAKSCluster" as current context in /home/photon/.kube/config
+
+
+Sample DockerFile:
+
+FROM node:8.11.4
+# Create app directory
+WORKDIR /usr/src/app
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+COPY package.json ./
+RUN npm install
+# If you are building your code for production
+# RUN npm run local
+# Bundle app source
+COPY . .
+EXPOSE 8001
+CMD [ "npm", "run", "dev" ]
+
+Sample Docker-ComposeFile:
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: activity-service
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: myquit-app
+    spec:
+      containers:
+      - name: activity-service
+        image: myquitdocker.azurecr.io/myquit_activity_service:v1.0.3
+        ports:
+        - containerPort: 8001
+          name: activity
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: activity-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8001
+  selector:
+    app: myquit-app
+
+
+
+
+
+
+Docker registry Information:
+Below commands gives information on azure docker repositories details and their versions.
+az acr repository list --name myquitdocker --output table
+az acr repository show-tags --name myquitdocker --repository myquit_auth_service --output table
+
+KUBECTL Commands:
+Below command give information about pods, services and deployments.
+
+kubectl get nodes
+kubectl get pod
+kubectl get svc
+kubectl get svc --watch
+kubectl get deployment
+kubectl delete deployment <deployment-Name>
+kubectl apply -f docker-compose.yml
+
+
+API-GATEWAY:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Create an HTTPS ingress controller on Azure Kubernetes Service (AKS) <-> Rbac Enable - Phaton AKS environment
+
+
+>>:::INGRESS:::<<
+
+kubectl logs -f deploy/addon-http-application-routing-nginx-ingress-controller -n kube-system
+
+kubectl port-forward content-service-c77578f74-g46mh 8004:8003
+
+
+HELM - issue resolution
+
+ReferenceLink:
+
+ HYPERLINK "https://docs.microsoft.com/en-us/azure/aks/ingress-own-tls" https://docs.microsoft.com/en-us/azure/aks/ingress-own-tls
+
+Execute below commands to install helm.
+
+$ curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > get_helm.sh
+$ chmod 700 get_helm.sh
+$ ./get_helm.sh
+
+photon@gsk-mobilefactory-vm:~/AKS-MyQuit$ helm version --short
+Client: v2.11.0+g2e55dbe
+Server: v2.11.0+g2e55dbe
+photon@gsk-mobilefactory-vm:~/AKS-MyQuit$
+
+photon@gsk-mobilefactory-vm:~/AKS-MyQuit$ kubectl version --short
+Client Version: v1.12.1
+Server Version: v1.10.8
+photon@gsk-mobilefactory-vm:~/AKS-MyQuit$
+
+
+ helm install stable/nginx-ingress --namespace kube-system --set controller.replicaCount=2
+  293  helm repo update
+  294  helm get release
+
+  598  helm version --short
+  599  helm init
+  600  helm version --short
+  601  helm init
+  602  helm list
+  603  helm status
+  604  helm init --upgrade
+  605  kubectl -n kube-system get po
+
+photon@gsk-mobilefactory-vm:~/GSK-Dev$ kubectl -n kube-system get po
+NAME                                    READY   STATUS    RESTARTS   AGE
+tiller-deploy-7f4974b9c8-w92pb          1/1     Running   0          12m
+
+
+
+
+
+
+Reference Links to install ingress:
+
+ HYPERLINK "https://docs.microsoft.com/en-us/azure/aks/ingress-tls" https://docs.microsoft.com/en-us/azure/aks/ingress-tls
+ HYPERLINK "https://docs.microsoft.com/en-us/azure/aks/http-application-routing" https://docs.microsoft.com/en-us/azure/aks/http-application-routing
+
+Create an ingress controller HYPERLINK "https://docs.microsoft.com/en-us/azure/aks/ingress-tls" \l "create-an-ingress-controller" 
+
+
+helm install stable/nginx-ingress --name myquit-nginx --set controller.replicaCount=2
+
+Note: namespace not mention, defaultly it takes “default”, rbac is true.
+
+Note:: common issue:
+8080 port issue
+Forbidden: helm inginx forbidden error : permission issue -Need to provide service account permissions.
+RefferenceLink: 
+ HYPERLINK "https://kubernetes.io/docs/reference/access-authn-authz/rbac/" https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+
+------------------------------------------------------
+Error: could not find tiller
+Solution: helm init
+
+photon@gsk-mobilefactory-vm:~$ helm init
+$HELM_HOME has been configured at /home/photon/.helm.
+
+Tiller (the Helm server-side component) has been installed into your Kubernetes Cluster.
+
+Please note: by default, Tiller is deployed with an insecure 'allow unauthenticated users' policy.
+To prevent this, run `helm init` with the --tiller-tls-verify flag.
+For more information on securing your installation see: https://docs.helm.sh/using_helm/#securing-your-helm-installation
+Happy Helming!
+---------------------------------------------------------
+
+Error: could not find a ready tiller pod
+Solution: wait few seconds
+
+Error: no available release name found
+Solution:
+kubectl create clusterrolebinding serviceaccounts-cluster-admin \
+  --clusterrole=cluster-admin \
+  --group=system:serviceaccounts
+
+End-Result:  kubectl get services
+myquit-nginx-nginx-ingress-controller        LoadBalancer   10.0.32.8      40.121.135.94   80:30956/TCP,443:30874/TCP   18h
+myquit-nginx-nginx-ingress-default-backend   ClusterIP      10.0.131.71    <none>          80/TCP                       18h
+
+(kubectl get service -l app=nginx-ingress --namespace kube-system)
+
+photon@gsk-mobilefactory-vm:~/AKS-MyQuit/myquit-app-services/services/V1/Content/kube$ kubectl get service -l app=nginx-ingress --namespace default
+NAME                                         TYPE           CLUSTER-IP    EXTERNAL-IP     PORT(S)                      AGE
+myquit-nginx-nginx-ingress-controller        LoadBalancer   10.0.32.8     40.121.135.94   80:30956/TCP,443:30874/TCP   18h
+myquit-nginx-nginx-ingress-default-backend   ClusterIP      10.0.131.71   <none>          80/TCP                       18h
+photon@gsk-mobilefactory-vm:~/AKS-MyQuit/myquit-app-services/services/V1/Content/kube$
+
+
+Create script-file with requires details and execute.
+Need to change IP and DNS Name.
+
+#!/bin/bash
+
+# Public IP address of your ingress controller
+IP="51.145.155.210"
+
+# Name to associate with public IP address
+DNSNAME="demo-aks-ingress"
+
+# Get the resource-id of the public ip
+PUBLICIPID=$(az network public-ip list --query "[?ipAddress!=null]|[?contains(ipAddress, '$IP')].[id]" --output tsv)
+
+# Update public ip address with DNS name
+az network public-ip update --ids $PUBLICIPID --dns-name $DNSNAME
+
+
+
+
+Install cert-manager HYPERLINK "https://docs.microsoft.com/en-us/azure/aks/ingress-tls" \l "install-cert-manager" 
+
+helm install stable/cert-manager \ 
+--namespace default \ 
+--set ingressShim.defaultIssuerName=letsencrypt-staging \ 
+--set ingressShim.defaultIssuerKind=ClusterIssuer
+
+Note: Namespace 
+
+
+photon@gsk-mobilefactory-vm:~/AKS-MyQuit/myquit-app-services/services/V1/Content/kube$ helm install stable/cert-manager --namespace default --set ingressShim.defaultIssuerName=letsencrypt-staging --set ingressShim.defaultIssuerKind=ClusterIssuer
+NAME:   wanton-sloth
+LAST DEPLOYED: Thu Nov  8 12:50:15 2018
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+==> v1/ServiceAccount
+NAME                       AGE
+wanton-sloth-cert-manager  2s
+
+==> v1beta1/ClusterRole
+wanton-sloth-cert-manager  1s
+
+==> v1beta1/ClusterRoleBinding
+wanton-sloth-cert-manager  1s
+
+==> v1beta1/Deployment
+wanton-sloth-cert-manager  1s
+
+==> v1/Pod(related)
+
+NAME                                        READY  STATUS             RESTARTS  AGE
+wanton-sloth-cert-manager-797f859c7c-dkqt7  0/1    ContainerCreating  0         1s
+
+
+NOTES:
+cert-manager has been deployed successfully!
+
+In order to begin issuing certificates, you will need to set up a ClusterIssuer
+or Issuer resource (for example, by creating a 'letsencrypt-staging' issuer).
+
+More information on the different types of issuers and how to configure them
+can be found in our documentation:
+
+https://cert-manager.readthedocs.io/en/latest/reference/issuers.html
+
+For information on how to configure cert-manager to automatically provision
+Certificates for Ingress resources, take a look at the `ingress-shim`
+documentation:
+
+https://cert-manager.readthedocs.io/en/latest/reference/ingress-shim.html
+
+photon@gsk-mobilefactory-vm:~/AKS-MyQuit/myquit-app-services/services/V1/Content/kube$
+Create a CA cluster issuer HYPERLINK "https://docs.microsoft.com/en-us/azure/aks/ingress-tls" \l "create-a-ca-cluster-issuer" 
+cluster-issuer.yaml
+
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: user@contoso.com
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    http01: {}
+Note: provide email-id
+
+photon@gsk-mobilefactory-vm:~/AKS-MyQuit$ kubectl apply -f cluster-issuer.yaml
+clusterissuer.certmanager.k8s.io/letsencrypt-staging created
+
+Create a certificate object HYPERLINK "https://docs.microsoft.com/en-us/azure/aks/ingress-tls" \l "create-a-certificate-object" 
+certificates.yaml
+
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: tls-secret
+spec:
+  secretName: tls-secret
+  dnsNames:
+  - demo-aks-ingress.eastus.cloudapp.azure.com
+  acme:
+    config:
+    - http01:
+        ingressClass: nginx
+      domains:
+      - demo-aks-ingress.eastus.cloudapp.azure.com
+  issuerRef:
+    name: letsencrypt-staging
+kind: ClusterIssuer
+
+Note: Change DNS Names
+
+photon@gsk-mobilefactory-vm:~/AKS-MyQuit$ kubectl apply -f certificates.yaml
+certificate.certmanager.k8s.io/tls-secret created
+
+
+Delete certificates:
+
+photon@gsk-mobilefactory-vm:~/Ellume-Dev$ helm install stable/cert-manager \
+>     --namespace kube-system \
+>     --set ingressShim.defaultIssuerName=letsencrypt-prod \
+>     --set ingressShim.defaultIssuerKind=ClusterIssuer
+Error: customresourcedefinitions.apiextensions.k8s.io "certificates.certmanager.k8s.io" already exists
+
+photon@gsk-mobilefactory-vm:~/Ellume-Dev$ kubectl get certificates --namespace kube-system
+No resources found.
+
+photon@gsk-mobilefactory-vm:~/Ellume-Dev$ kubectl get customresourcedefinitions --all-namespaces=true
+NAME                                AGE
+certificates.certmanager.k8s.io     2d23h
+clusterissuers.certmanager.k8s.io   2d23h
+issuers.certmanager.k8s.io          2d23h
+
+photon@gsk-mobilefactory-vm:~/Ellume-Dev$ kubectl delete customresourcedefinitions certificates.certmanager.k8s.io
+customresourcedefinition.apiextensions.k8s.io "certificates.certmanager.k8s.io" deleted
+photon@gsk-mobilefactory-vm:~/Ellume-Dev$ kubectl delete customresourcedefinitions clusterissuers.certmanager.k8s.io
+customresourcedefinition.apiextensions.k8s.io "clusterissuers.certmanager.k8s.io" deleted
+photon@gsk-mobilefactory-vm:~/Ellume-Dev$ kubectl delete customresourcedefinitions issuers.certmanager.k8s.io
+customresourcedefinition.apiextensions.k8s.io "issuers.certmanager.k8s.io" deleted
+photon@gsk-mobilefactory-vm:~/Ellume-Dev$
+
+
+
+Run Content Service -applications
+
+kubectl apply -f myquit_content_sprint-ingress.yaml
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: myquit-content-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    certmanager.k8s.io/cluster-issuer: letsencrypt-staging
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - dev-myquit-services.eastus.cloudapp.azure.com
+    secretName: tls-secret
+  rules:
+  - host: dev-myquit-services.eastus.cloudapp.azure.com
+    http:
+      paths:
+      - path: /contentService
+        backend:
+          serviceName: content-service
+          servicePort: 8003
+
+Note: Before running ingress, run below deployment & service for content.
+
+kubectl apply -f myquit_content_ingress_service.yml
+
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: content-service
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: content-service
+  minReadySeconds: 60
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 50%
+  template:
+    metadata:
+      labels:
+        app: content-service
+        version: v1
+    spec:
+      containers:
+      - name: content-service
+        image: myquitdocker.azurecr.io/myquit_content_service:v1.0.4
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: content-service
+  labels:
+    app: content-service
+spec:
+  type: ClusterIP
+  selector:
+    app: content-service
+  ports:
+    - protocol: TCP
+      name : http1
+      port: 8003
+      targetPort: 8003
+    - protocol: TCP
+
+API-Management:
+ HYPERLINK "https://docs.microsoft.com/en-us/azure/aks/ingress-tls" \l "run-demo-applications" 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Useful commands:
+
+Verify AKS - Cluster:
+Kubectl cluster-info
+
+MM-GSK-CI:kube ramakrishna_m$  kubectl cluster-info
+Kubernetes master is running at https://myquitqaak-myquit-dev-33a93c-a637cea0.hcp.centralus.azmk8s.io:443
+Heapster is running at https://myquitqaak-myquit-dev-33a93c-a637cea0.hcp.centralus.azmk8s.io:443/api/v1/namespaces/kube-system/services/heapster/proxy
+KubeDNS is running at https://myquitqaak-myquit-dev-33a93c-a637cea0.hcp.centralus.azmk8s.io:443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+kubernetes-dashboard is running at https://myquitqaak-myquit-dev-33a93c-a637cea0.hcp.centralus.azmk8s.io:443/api/v1/namespaces/kube-system/services/kubernetes-dashboard/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+
+
+Verify Pod:
+kubectl port-forward <Pod_Name> 8004:8003
+kubectl port-forward content-service-c77578f74-g46mh 8004:8003
+Note: here 8003 is content service port number
+
+Open other terminal and check response
+curl -v localhost:8004
+
+photon@gsk-mobilefactory-vm:~$ curl -v localhost:8004
+* Rebuilt URL to: localhost:8004/
+*   Trying 127.0.0.1...
+* TCP_NODELAY set
+* Connected to localhost (127.0.0.1) port 8004 (#0)
+> GET / HTTP/1.1
+> Host: localhost:8004
+> User-Agent: curl/7.58.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< X-Powered-By: Express
+< Access-Control-Allow-Methods: GET, POST
+< Access-Control-Allow-Headers: Content-Type, Authorization
+< Content-Type: text/html; charset=utf-8
+< Content-Length: 36
+< ETag: W/"24-3wBLJjYTqmuoA2mpZuD4kPAUh8Y"
+< Date: Thu, 08 Nov 2018 06:39:02 GMT
+< Connection: keep-alive
+<
+* Connection #0 to host localhost left intact
+Content Service Running on port 8003photon@gsk-mobilefactory-vm:~$
+
+To rectify 503 error for services, need to add in deployment file.
+	          env:
+        - name: KUBERNETES_USERPROFILE_8006
+          value: dev-myquit-services.hcp.eastus.azmk8s.io:8006
+
+For Docker: docker stats
+to see cpu & memory for all running containers.
+
+
+kubectl get all
+
+kubectl get nodes
+kubectl get nodes -o wide
+
+kubectl get pods
+kubectl get pods -o wide
+
+kubectl get svc
+kubectl get service
+kubectl get svc --watch
+kubectl get svc -o wide
+
+kubectl get deployment
+kubectl get deployment -o wide
+
+kubectl delete deployment <deployment-Name>
+kubectl delete service <service-Name>
+Pods are deletes with respect to services
+
+Runing yaml file
+kubectl apply -f docker-compose.yml
+
+kubectl scale --replicas=5 deployment/azure-vote-front
+kubectl scale --replicas=5 deployment/<Deployment Name>
+kubectl scale --replicas=5 deployment/myquit_userprofile_service  -- Wrong
+kubectl scale --replicas=5 deployment/user-service
+
+kubectl describe activity-service
+kubectl describe pod activity-service-5f7b8d5bcb-htpdz
+kubectl logs activity-service-5f7b8d5bcb-htpdz
+kubectl logs -f activity-service-5f7b8d5bcb-htpdz
+
+kubectl autoscale deployment activity-service --cpu-percent=50 --min=5 --max=10
+kubectl delete hpa activity-service
+kubectl get svc --watch
+kubectl delete service activity-service
+kubectl -n kube-system describe pods
+kubectl delete node <Node NAME>     ---> Risky
+
+kubectl get deployments --all-namespaces
+
+kubectl logs -f deploy/addon-http-application-routing-nginx-ingress-controller -n kube-system
+
+kubectl port-forward content-service-c77578f74-g46mh 8004:8003
+
+kubectl exec -it user-service-545955f95f-7z4g8 -- /bin/sh
+
+kubectl get certificates
+
+Kubectl describe secret
+
+photon@gsk-mobilefactory-vm:~/Ellume-Dev/Auth/authentication_service/kube$ kubectl get secret
+NAME                       TYPE                                  DATA   AGE
+default-token-95kkl        kubernetes.io/service-account-token   3      3h20m
+sprint-docker-credential   kubernetes.io/dockerconfigjson        1      74s
+
+(photon@gsk-mobilefactory-vm:~/Ellume-Dev/Auth/authentication_service/kube$ kubectl create secret docker-registry sprint-docker-credential --docker-server=sprint.azurecr.io --docker-username=sprint --docker-password=HH9O0RVGLkEgi6y7Mch+wosK6KIPU1NF
+)
+
+
+To Check Ingress Nginx Configuration:
+
+Reference URL: https://github.com/kubernetes/ingress-nginx/issues/2007
+
+$ kubectl get pods --all-namespaces
+$ kubectl -n kube-system exec nginx-ingress-controller-138430828-pqb7q cat /etc/nginx/nginx.conf | tee nginx.test-ingress-export.conf
+
+
+
+
+
+Nginx-Ingrees HTTP Response:  GSK - QA Environment
+
+Reference URL:  HYPERLINK "https://docs.microsoft.com/en-us/azure/aks/ingress-basic" \t "https://photon.facebook.com/chat/t/_blank" https://docs.microsoft.com/en-us/azure/aks/ingress-basic
+
+Create an ingress controller:
+
+If RBAC True:
+
+helm install stable/nginx-ingress --namespace kube-system --set controller.replicaCount=2
+
+Note:  If rbac enable above command is fine. If rbac disable, please mention rbac property as false.
+
+
+If RBAC False: 
+
+helm install stable/nginx-ingress --namespace kube-system --set controller.replicaCount=2 --set rbac.create=false
+
+kubectl get service -l app=nginx-ingress --namespace kube-system
+
+
+ YAML File
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: myquit-qa-service
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /activityService
+        backend:
+          serviceName: activity-service
+          servicePort: 8001
+      - path: /authService
+        backend:
+          serviceName: auth-service
+          servicePort: 8002
+      - path: /contentService
+        backend:
+          serviceName: content-service
+          servicePort: 8003
+      - path: /gamificationService
+        backend:
+          serviceName: gamification-service
+          servicePort: 8004
+      - path: /userprofileService
+        backend:
+          serviceName: userprofile-service
+          servicePort: 8006
+
+
+
+
+DockerFile:
+
+FROM node:8.11.4
+
+# Create app directory
+WORKDIR /usr/src/app
+
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+COPY package.json ./
+
+RUN npm install
+# If you are building your code for production
+# RUN npm run local
+
+# Bundle app source
+COPY . .
+
+EXPOSE 8001
+CMD [ "npm", "run", "gsk" ]
+
+Deploy and Service Yaml file - Reference
+
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: activity-service
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: activity-service
+  minReadySeconds: 60
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 50%
+  template:
+    metadata:
+      labels:
+        app: activity-service
+        version: v1
+    spec:
+      imagePullSecrets:
+        - name: docker-reg-myquitqa-credential
+      containers:
+      - name: activity-service
+        image: myquitqa.azurecr.io/myquit_qa_activity_service:NewVersion
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: activity-service
+  labels:
+    app: activity-service
+spec:
+  type: ClusterIP	
+  selector:
+    app: activity-service
+  ports:
+    - protocol: TCP
+      name : http1
+
+
+
+Manuval deployemnt:
+
+GitHub
+Repo: myquit-app-services
+Branch: GSK-azure-QA
+URL:
+Git check-out URL: git clone https://<username>:<password>@ HYPERLINK "http://github.com/gsk-tech/myquit-app-services.git" \t "https://mail.google.com/mail/u/0/" \l "search/satisha.krishnamurthy%40photoninfotech.net/_blank" github.com/gsk-tech/myquit-app-services.git -b GSK-azure-QA
+
+Inginx-Ingress file location: /myquit-app-services/deployment/GSK_myquit_qa_ingress_nginx.yaml
+
+ActivityService: myquit-app-services/services/V1/ActivityService/kube/GSK_myquit_qa_activity_ingress_service.yml
+AuthService: myquit-app-services/services/V1/Authentication/kube/GSK_myquit_qa_auth_ingress_service.yml
+ContentService: myquit-app-services/services/V1/Content/kube/GSK_myquit_qa_content_ingress_service.yml
+UserprofileServicec: myquit-app-services/services/V1/UserProfile/kube/GSK_myquit_qa_userprofile_ingress_service.yml
+
+Note: In above YML files need to modify Docker Image Version, while deploying servcies.
+   ex: image:  HYPERLINK "http://myquitqa.azurecr.io/myquit_qa_auth_service" \t "https://mail.google.com/mail/u/0/" \l "search/satisha.krishnamurthy%40photoninfotech.net/_blank" myquitqa.azurecr.io/myquit_qa_auth_service:1.0.0
+
+------------------------>>>>>>>>>>>><<<<<<<<<<<<<<<<<------------------------------------
+
+Below command are helpful to do Image: Build / Tag / Push / Apply
+
+myquit_qa_activity_service
+sudo docker build -t myquit_qa_activity_service .
+docker tag myquit_qa_activity_service:latest  HYPERLINK "http://myquitqa.azurecr.io/myquit_qa_activity_service" \t "https://mail.google.com/mail/u/0/" \l "search/satisha.krishnamurthy%40photoninfotech.net/_blank" myquitqa.azurecr.io/myquit_qa_activity_service:1.0.0
+docker push  HYPERLINK "http://myquitqa.azurecr.io/myquit_qa_activity_service" \t "https://mail.google.com/mail/u/0/" \l "search/satisha.krishnamurthy%40photoninfotech.net/_blank" myquitqa.azurecr.io/myquit_qa_activity_service:1.0.0
+kubectl apply -f GSK_myquit_qa_activity_service.yml
+
+---------------------------------
+
+myquit_qa_auth_service
+sudo docker build -t myquit_qa_auth_service .
+docker tag myquit_qa_auth_service:latest  HYPERLINK "http://myquitqa.azurecr.io/myquit_qa_auth_service" \t "https://mail.google.com/mail/u/0/" \l "search/satisha.krishnamurthy%40photoninfotech.net/_blank" myquitqa.azurecr.io/myquit_qa_auth_service:1.0.0
+docker push  HYPERLINK "http://myquitqa.azurecr.io/myquit_qa_auth_service" \t "https://mail.google.com/mail/u/0/" \l "search/satisha.krishnamurthy%40photoninfotech.net/_blank" myquitqa.azurecr.io/myquit_qa_auth_service:1.0.0
+kubectl apply -f GSK_myquit_qa_auth_service.yml
+
+-----------------------------------
+
+myquit_qa_content_service
+sudo docker build -t myquit_qa_content_service .
+docker tag myquit_qa_content_service:latest  HYPERLINK "http://myquitqa.azurecr.io/myquit_qa_content_service" \t "https://mail.google.com/mail/u/0/" \l "search/satisha.krishnamurthy%40photoninfotech.net/_blank" myquitqa.azurecr.io/myquit_qa_content_service:2.0.0
+docker push  HYPERLINK "http://myquitqa.azurecr.io/myquit_qa_content_service" \t "https://mail.google.com/mail/u/0/" \l "search/satisha.krishnamurthy%40photoninfotech.net/_blank" myquitqa.azurecr.io/myquit_qa_content_service:2.0.0
+kubectl apply -f GSK_myquit_qa_content_service.yml
+
+----------------------------------------
+
+myquit_qa_userprofile_service
+sudo docker build -t myquit_qa_userprofile_service .
+docker tag myquit_qa_userprofile_service:latest  HYPERLINK "http://myquitqa.azurecr.io/myquit_qa_userprofile_service" \t "https://mail.google.com/mail/u/0/" \l "search/satisha.krishnamurthy%40photoninfotech.net/_blank" myquitqa.azurecr.io/myquit_qa_userprofile_service:1.0.0
+docker push  HYPERLINK "http://myquitqa.azurecr.io/myquit_qa_userprofile_service" \t "https://mail.google.com/mail/u/0/" \l "search/satisha.krishnamurthy%40photoninfotech.net/_blank" myquitqa.azurecr.io/myquit_qa_userprofile_service:1.0.0
+kubectl apply -f GSK_myquit_qa_userprofile_service.yml
+--------------------------------------------------------------
+INCLUDEPICTURE \d "https://ssl.gstatic.com/ui/v1/icons/mail/images/cleardot.gif" \* MERGEFORMATINET 
+
+
+Sample Automation-Script:
+
+echo "clean WorkSpace"
+rm -rf ${WORKSPACE}/myquit-app-services
+cd ${WORKSPACE}
+#git clone https://ramaxxxxxxa:xxxpwdxxx@github.com/gsk-tech/myquit-app-services.git -b GSK-azure-QA
+git clone 'https://ramakxxxxxxm:xxxxpwdxxxx@insight.photoninfotech.com/gerrit/myquit-app-services' -b GSK-azure-QA
+cd ${WORKSPACE}/myquit-app-services/services/V1/ActivityService
+echo "Running Versioning Script"
+xc=`cat version`
+#echo "$xc"
+A=1
+xc1=`echo $xc | awk '{print $2}'`
+#echo "$xc1"
+xc2=`echo $xc1 | cut -d '.' -f3`
+#echo "$xc2"
+xc3=`echo ${xc1%.*}`
+#echo "$xc3"
+xc4=`expr $xc2 + $A`
+#echo "$xc4"
+NewVersion=`echo "$xc3.$xc4"`
+echo "$NewVersion"
+echo "" > version
+echo "Version: $NewVersion" >> version
+echo "Login to AKS"
+az login -u ramakrishna.mulareddy@photoninfotech.net -p Gsk@1234
+docker login --username myquitqa --password uepAJE4p0QwqDzdU4yC=L3rt7CeSJ4YI myquitqa.azurecr.io
+az aks get-credentials --resource-group MyQuit-dev --name myquitqaaks
+echo "Create and push Docker image"
+docker images -a | grep "myquit_qa_activity_service" | awk '{print $3}' | sudo xargs docker rmi -f
+sleep 2
+docker build -t myquit_qa_activity_service .
+sleep 5
+docker tag myquit_qa_activity_service:latest myquitqa.azurecr.io/myquit_qa_activity_service:$NewVersion
+sleep 15
+docker push myquitqa.azurecr.io/myquit_qa_activity_service:$NewVersion
+sleep 2
+echo "Updating Activity Service"
+cd kube
+find ./ -type f -exec sed -i '' -e "s/NewVersion/$NewVersion/" {} \;
+cat GSK_myquit_qa_activity_ingress_service.yml
+kubectl apply -f GSK_myquit_qa_activity_ingress_service.yml
+sleep 5
+kubectl get pods
+echo "Updating version into github"
+cd ..
+git add version
+git commit -m "Updated version for Docker tagging"
+git push
+sleep 60
+kubectl get pods
+sleep 2
+#sudo docker images -a | grep "myquit_qa_activity_service" | awk '{print $3}' | sudo xargs docker rmi -f
+
+
+
+Azure Functions: (Ubuntu)
+
+Reference URL:
+
+ HYPERLINK "https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local" \t "https://photon.facebook.com/chat/t/_blank" https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local
+
+Dependecy url:
+
+https://dotnet.microsoft.com/download/linux-package-manager/ubuntu18-04/sdk-current
+
+Above url may not help, Use below one to install dotnet-core-2.1
+https://dev.to/carlos487/installing-dotnet-core-in-ubuntu-1804-7lp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

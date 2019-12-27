@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aub-admin
+spec:
+  replicas: 1
+  selector:
+   matchLabels:
+      app: aub-admin
+  template:
+    metadata:
+      labels:
+        app: aub-admin
+    spec:
+      containers:
+      - name: aub-admin
+        image: tamil/spring-boot-admin:1.0
+        ports:
+        - containerPort: 8093
+          name: aub-admin
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aub-admin
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8093
+  selector:
+    app: aub-admin
+    
+

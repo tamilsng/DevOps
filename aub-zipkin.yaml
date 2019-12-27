@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aub-zipkin
+spec:
+  replicas: 1
+  selector:
+   matchLabels:
+      app: aub-zipkin
+  template:
+    metadata:
+      labels:
+        app: aub-zipkin
+    spec:
+      containers:
+      - name: aub-zipkin
+        image: tamil/aub-zipkin:1.0
+        ports:
+        - containerPort: 9411
+          name: aub-zipkin
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aub-zipkin
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 9411
+  selector:
+    app: aub-zipkin
+
