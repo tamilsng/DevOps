@@ -1,0 +1,99 @@
+Reference
+https://gradle.org/maven-vs-gradle/
+https://stackify.com/gradle-vs-maven/
+https://www.jrebel.com/blog/java-build-tools-comparison
+
+Advantages of maven over gradle
+https://www.softwareyoga.com/10-reasons-why-we-chose-maven-over-gradle/
+https://phauer.com/2018/moving-back-from-gradle-to-maven/
+
+What is Gradle?
+
+Gradle is a build automation system that is fully open source and uses the concepts you see on Apache Maven. It uses domain-specific language based on the programming language Groovy, differentiating it from Apache Maven, which uses XML for its project configuration. It also determines the order of tasks run by using a directed acyclic graph.
+
+It was designed to support multi-project builds that are expected to be quite huge. It also allows for incrementally adding to your build, because it knows which parts of your project are updated. 
+
+It supports development and subsequent deployment using Java, Scala, and Groovy, with other project workflows and languages being introduced in the future.
+
+What is Maven?
+
+Maven is used for project build automation using Java. It helps you map out how a particular software is built, as well as its different dependencies.
+
+It uses an XML file to describe the project that you are building, the dependencies of the software with regards to third-party modules and parts, the build order, as well as the needed plugins. 
+
+There are pre-defined targets for tasks such as packaging and compiling.
+
+Maven will download libraries and plugins from the different repositories and then puts them all in a cache on your local machine. While predominantly used for Java projects, you can use it for Scala, Ruby, and C#, as well as a host of other language
+
+Gradle vs. Maven
+
+Gradle is based on a graph of task dependencies – in which tasks are the things that do the work 
+
+Maven is based on a fixed and linear model of phases. With Maven, goals are attached to project phases, and goals serve a similar function to Gradle’s tasks, being the “things that do the work.”
+
+
+Performance-wise, both allow for multi-module builds to run in parallel. However, Gradle allows for incremental builds because it checks which tasks are updated or not.
+
+If it is, then the task is not executed, giving you a much shorter build time.
+
+Other distinguishing performance features you can find on Gradle include:
+
+Incremental compilations for Java classes
+Compile avoidance for Java
+The use of APIs for incremental subtasks
+A compiler daemon that also makes compiling a lot faster
+
+managing dependencies
+
+both Gradle and Maven can handle dynamic and transitive dependencies, to use third-party dependency caches, and to read POM metadata format. You can also declare library versions via central versioning definition and enforce central versioning.
+
+Both download transitive dependencies from their artifact repositories. Maven has Maven Central while Gradle has JCenter, and you can define your own private company repository as well. If there are several dependencies required, Maven can download these simultaneously.
+
+Advantages of gradle :
+
+when it comes to API and implementation dependencies, as well as inherently allowing concurrent safe caches.
+
+also keeps repository metadata along with cached dependencies, ensuring that two or more projects using the same cache will not overwrite each other, and it has a checksum-based cache and can synchronize cache with the repository.
+
+Gradle is compatible with IVY Metadata, allowing you to define custom rules to specify a version for a dynamic dependency, and resolving version conflicts
+
+Other dependency management features that you can find only on Gradle are:
+
+The use of substitution rules for compatible libraries
+The use of ReplacedBy rules
+Better metadata resolution
+The ability to dynamically replace project dependencies with external ones, and vice versa
+
+Gradle also gives you an easier time when working with composite builds, and it enables you to work with ad-hoc and permanent composite builds, as well as combine different builds and importing a composite build into Eclipse of IntelliJ IDEA.
+
+As far as execution models are concerned, both have task groups and descriptions. Both enable you to build only the specified project and its dependencies. Gradle, however, has a fully configurable DAG, while with Maven, a goal can be attached only to one other goal. Multiple goals take on the form of an ordered list. Gradle also allows task exclusions, transitive exclusions, and task dependency inference. Gradle also has advanced features for task ordering and finalizers, among others.
+
+Administering build infrastructure is another strong point for Gradle as it uses wrappers that accept auto provisioning, while with Maven, you need to have an extension to support self-provisioning builds. Gradle also enables you to configure version-based build environments without having to set these up manually. It also allows custom distributions.
+
+
+How to Choose
+Overall, both tools have their respective strengths and weaknesses.
+
+Customized builds. With Maven, you can easily define your project’s metadata and dependencies, but creating a highly customized build might be a nightmare for Maven users. The POM file can easily get bloated as your project grows and might as well be an unreadable XML file later on.
+
+Dependency management and directory structure. Still, Maven provides simple yet effective dependency management, and since it has a directory structure for your projects, you have some sort of standard layout for all your projects.
+
+It uses a declarative XML file for its POM file and has a host of plugins that you can use. Gradle uses the directory structure you see on Maven, but this can be customized. It also uses the same GAV format that Maven uses to identify artifacts.
+
+Plugins and integrations
+
+Maven also supports a wide variety of build life-cycle steps and integrates seamlessly with third-party tools such as CI servers, code coverage plugins, and artifact repository systems, among others. 
+
+As far as plugins go, there is a growing number of available plugins now, and there are large vendors that have Gradle-compatible plugins. However, there are still more available plugins for Maven compared to the number available for Gradle.
+
+
+Flexibility.
+
+Gradle, on the other hand, is very flexible and is based on a script.
+
+Custom builds would be easy to do on Gradle. However, because Gradle is virtually a newcomer, the number of developers who know Gradle inside-out might be limited.
+
+In the end,
+what you choose will depend primarily on what you need. Gradle is more powerful.  However, there are times that you really do not need most of the features and functionalities it offers. 
+
+Maven might be best for small projects, while Gradle is best for bigger projects. If you’ve been working with Maven and find that your project has outgrown it, it is possible to migrate from Maven to Gradle.
